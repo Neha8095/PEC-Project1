@@ -1,0 +1,4 @@
+catalogue_id,isbn,title,author,category,publisher,publication_year,total_quantity,shelf_location
+,9780131103627,"The C Programming Language","Brian W. Kernighan","Programming","Prentice Hall",1988,8,P-04
+,9780132350884,"Clean Code","Robert C. Martin","Programming","Prentice Hall",2008,5,P-03
+LIB-LOCAL-001,,"College Library Handbook","Library Committee","Library Science",,2025,2,REF-01

@@ -1,0 +1,52 @@
+{
+  "name": "Library Search Books",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "library/search-books",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth"
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-500, 0],
+      "webhookId": "library-search-books"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT b.id,b.title,b.author,b.isbn,b.available_copies,b.total_copies,c.name category FROM books b LEFT JOIN categories c ON c.id=b.category_id WHERE $1 = '' OR b.title ILIKE '%' || $1 || '%' OR b.author ILIKE '%' || $1 || '%' OR b.isbn ILIKE '%' || $1 || '%' LIMIT 20;",
+        "options": {
+          "queryReplacement": "={{ [String($json.body.query || '').slice(0, 200)] }}"
+        }
+      },
+      "id": "2",
+      "name": "PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [-200, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {success:true, books:$input.all().map(x=>x.json)} }}"
+      },
+      "id": "3",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [100, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "PostgreSQL", "type": "main", "index": 0}]]
+    },
+    "PostgreSQL": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  }
+}

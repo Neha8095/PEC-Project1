@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library AI Assistant</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">🤖 Library AI</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <main class="container">
+    <section class="card">
+      <h1>Ask LibraryAI</h1>
+      <p class="muted">
+        Ask about books, availability, your loans, due dates, or unpaid fines.
+        This assistant uses the library database locally; questions and account details are not sent to an AI provider.
+      </p>
+      <form id="questionForm">
+        <label for="question">Your question</label>
+        <textarea id="question" rows="4" maxlength="1000" required
+          placeholder="For example: Is Python Programming available?"></textarea>
+        <br><br>
+        <button id="askButton" class="btn primary" type="submit">Ask LibraryAI</button>
+      </form>
+      <div id="answer" role="status" aria-live="polite" style="white-space:pre-wrap;margin-top:20px"></div>
+    </section>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    guard();
+
+    const form = document.getElementById('questionForm');
+    const question = document.getElementById('question');
+    const answer = document.getElementById('answer');
+    const askButton = document.getElementById('askButton');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const message = question.value.trim();
+      if (!message) {
+        answer.className = 'alert';
+        answer.textContent = 'Enter a question for the assistant.';
+        return;
+      }
+
+      askButton.disabled = true;
+      answer.className = 'muted';
+      answer.textContent = 'LibraryAI is checking the catalogue and preparing an answer...';
+
+      try {
+        const result = await api('/ai/chat', {
+          method: 'POST',
+          body: JSON.stringify({ message }),
+        });
+        answer.className = 'success';
+        answer.textContent = result.answer;
+      } catch (error) {
+        answer.className = 'alert';
+        answer.textContent = error.message || 'The assistant could not answer right now.';
+      } finally {
+        askButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

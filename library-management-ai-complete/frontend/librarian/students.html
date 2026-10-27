@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">🎓 Students</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a class="btn primary" href="/register.html">Register Student</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Student List</h1>
+    <div id="message" role="status" aria-live="polite"></div>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Student ID</th><th>Department</th></tr>
+      </thead>
+      <tbody id="studentRows"></tbody>
+    </table>
+  </div>
+  <script src="/js/app.js"></script>
+  <script>
+    roleGuard('LIBRARIAN', 'ADMIN');
+
+    (async () => {
+      const rows = document.getElementById('studentRows');
+      const message = document.getElementById('message');
+
+      try {
+        const data = await api('/users');
+        const students = data.users.filter((user) => user.role === 'STUDENT');
+
+        if (!students.length) {
+          message.textContent = 'No students registered yet. Select “Register Student” to add one.';
+          return;
+        }
+
+        for (const student of students) {
+          const row = document.createElement('tr');
+          for (const value of [
+            student.full_name,
+            student.email,
+            student.student_id || '-',
+            student.department || '-'
+          ]) {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.appendChild(cell);
+          }
+          rows.appendChild(row);
+        }
+      } catch (error) {
+        message.className = 'alert';
+        message.textContent = error.message || 'Could not load the student list.';
+      }
+    })();
+  </script>
+</body>
+</html>

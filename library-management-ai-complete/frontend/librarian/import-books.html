@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bulk Book Import</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .table-wrap{overflow-x:auto;margin-top:16px}
+    .status-error{color:#b91c1c;font-weight:700}
+    .status-update{color:#1d4ed8;font-weight:700}
+    .status-new{color:#047857;font-weight:700}
+    .status-duplicate{color:#a16207;font-weight:700}
+    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:16px 0}
+    .summary div{padding:12px;background:#f1f5f9;border-radius:9px}
+    .instructions{line-height:1.6}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">📚 Bulk Book Import</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="manage-books.html">Manage books</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <main class="container">
+    <section class="card">
+      <h1>Import catalogue records</h1>
+      <p class="instructions">
+        Upload CSV or Excel (.xlsx), review the preview, then confirm. ISBN is used to safely match a title on re-import.
+        If a book has no ISBN, enter a stable, unique Catalogue ID (for example <code>LIB-LOCAL-001</code>) so later imports
+        update that same record. Total quantity is the complete shelf quantity; active loans are preserved and cannot be
+        made greater than the imported total.
+      </p>
+      <p class="toolbar">
+        <a class="btn secondary" href="/api/books/import/template.csv">Download CSV template</a>
+        <a class="btn secondary" href="/api/books/import/template.xlsx">Download Excel template</a>
+        <a class="btn secondary" href="/templates/book-import-example.csv" download>Download example CSV</a>
+      </p>
+      <label for="file">Catalogue file (.csv or .xlsx)</label>
+      <input id="file" type="file" accept=".csv,.xlsx">
+      <p class="muted">Limits are configured by MAX_UPLOAD_MB (default 10 MB) and MAX_IMPORT_ROWS (default 10,000).</p>
+      <div class="toolbar">
+        <button id="preview-button" class="btn primary" type="button">Preview file</button>
+        <button id="import-button" class="btn primary" type="button" disabled>Import previewed file</button>
+      </div>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="report" class="card" hidden>
+      <h2 id="report-title">Import preview</h2>
+      <div id="summary" class="summary"></div>
+      <div id="errors"></div>
+      <div id="rows" class="table-wrap"></div>
+    </section>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    roleGuard('LIBRARIAN', 'ADMIN');
+    const fileInput = document.getElementById('file');
+    const previewButton = document.getElementById('preview-button');
+    const importButton = document.getElementById('import-button');
+    const message = document.getElementById('message');
+    const report = document.getElementById('report');
+    let previewedFile = null;
+
+    function addCell(row, value, className) {
+      const cell = document.createElement('td');
+      cell.textContent = value == null ? '' : String(value);
+      if (className) cell.className = className;
+      row.appendChild(cell);
+    }
+
+    function renderReport(data, importing) {
+      report.hidden = false;
+      document.getElementById('report-title').textContent = importing ? 'Import result' : 'Import preview';
+      const summaryElement = document.getElementById('summary');
+      summaryElement.replaceChildren();
+      const summary = data.summary;
+      const labels = importing
+        ? [['Rows', summary.total_rows], ['Imported', summary.imported], ['Updated', summary.updated], ['Duplicates', summary.duplicates], ['Skipped', summary.skipped], ['Validation errors', summary.validation_errors]]
+        : [['Rows', summary.total_rows], ['New records', summary.new_records], ['Updates', summary.updated_records], ['Duplicates', summary.duplicates], ['Skipped', summary.skipped], ['Validation errors', summary.validation_errors]];
+      for (const [label, value] of labels) {
+        const tile = document.createElement('div');
+        const title = document.createElement('strong');
+        const count = document.createElement('div');
+        title.textContent = label;
+        count.textContent = String(value);
+        tile.append(title, count);
+        summaryElement.appendChild(tile);
+      }
+
+      const errorsElement = document.getElementById('errors');
+      errorsElement.replaceChildren();
+      const errors = data.errors || [];
+      if (errors.length) {
+        const heading = document.createElement('h3');
+        heading.textContent = 'Rows requiring attention';
+        errorsElement.appendChild(heading);
+        const list = document.createElement('ul');
+        for (const item of errors) {
+          const entry = document.createElement('li');
+          entry.textContent = `Row ${item.row_number}: ${item.reasons.join(' ')}`;
+          list.appendChild(entry);
+        }
+        errorsElement.appendChild(list);
+      }
+      if (data.truncated) {
+        const note = document.createElement('p');
+        note.className = 'muted';
+        note.textContent = 'Showing the first 100 rows. All rows are validated by the server.';
+        errorsElement.appendChild(note);
+      }
+
+      const tableWrap = document.getElementById('rows');
+      tableWrap.replaceChildren();
+      if (!data.rows || !data.rows.length) return;
+      const table = document.createElement('table');
+      const head = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      for (const label of ['Row', 'Status', 'Catalogue ID', 'ISBN', 'Title', 'Author', 'Category', 'Total', 'Reason']) {
+        const cell = document.createElement('th');
+        cell.textContent = label;
+        headerRow.appendChild(cell);
+      }
+      head.appendChild(headerRow);
+      table.appendChild(head);
+      const body = document.createElement('tbody');
+      for (const item of data.rows) {
+        const row = document.createElement('tr');
+        const statusClass = `status-${item.status.toLowerCase()}`;
+        addCell(row, item.row_number);
+        addCell(row, item.status, statusClass);
+        addCell(row, item.catalogue_id);
+        addCell(row, item.isbn);
+        addCell(row, item.title);
+        addCell(row, item.author);
+        addCell(row, item.category);
+        addCell(row, item.total_quantity);
+        addCell(row, (item.reasons || []).join(' '), item.reasons && item.reasons.length ? 'status-error' : '');
+        body.appendChild(row);
+      }
+      table.appendChild(body);
+      tableWrap.appendChild(table);
+    }
+
+    async function submitUpload(action) {
+      if (!fileInput.files.length) throw new Error('Choose a CSV or .xlsx file first.');
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      const headers = {};
+      if (token()) headers.Authorization = `Bearer ${token()}`;
+      const response = await fetch(`/api/books/import${action}`, { method: 'POST', headers, body: form });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'The import request failed.');
+      return data;
+    }
+
+    fileInput.addEventListener('change', () => {
+      previewedFile = null;
+      importButton.disabled = true;
+      report.hidden = true;
+      message.textContent = '';
+    });
+
+    previewButton.addEventListener('click', async () => {
+      previewButton.disabled = true;
+      importButton.disabled = true;
+      message.textContent = 'Validating file and checking existing catalogue records…';
+      try {
+        const data = await submitUpload('/preview');
+        renderReport(data, false);
+        previewedFile = fileInput.files[0];
+        importButton.disabled = false;
+        message.textContent = 'Preview complete. Review the rows and then confirm the import.';
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        previewButton.disabled = false;
+      }
+    });
+
+    importButton.addEventListener('click', async () => {
+      if (!previewedFile || previewedFile !== fileInput.files[0]) {
+        message.textContent = 'Preview the selected file before importing.';
+        importButton.disabled = true;
+        return;
+      }
+      if (!confirm('Import this file now? Matching ISBNs or Catalogue IDs will update existing book records.')) return;
+      importButton.disabled = true;
+      previewButton.disabled = true;
+      message.textContent = 'Importing in database batches…';
+      try {
+        const data = await submitUpload('');
+        renderReport(data, true);
+        previewedFile = null;
+        message.textContent = 'Import completed. Existing loans and checked-out quantities were preserved.';
+      } catch (error) {
+        message.textContent = error.message;
+        importButton.disabled = false;
+      } finally {
+        previewButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

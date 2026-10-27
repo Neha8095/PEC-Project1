@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Manage Books</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">📚 Manage Books</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="import-books.html">Bulk import</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <main class="container">
+    <section class="card">
+      <h2>Add Book</h2>
+      <div class="grid">
+        <input id="book-title" placeholder="Title" aria-label="Title">
+        <input id="book-author" placeholder="Author" aria-label="Author">
+        <input id="book-isbn" placeholder="ISBN" aria-label="ISBN">
+        <input id="book-publisher" placeholder="Publisher" aria-label="Publisher">
+        <input id="book-total" type="number" min="1" value="1" aria-label="Total copies">
+        <input id="book-shelf" placeholder="Shelf" aria-label="Shelf">
+      </div>
+      <br>
+      <button id="add-book" class="btn primary" type="button">Add Book</button>
+      <p id="form-message" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Catalogue</h2>
+      <label for="catalogue-search">Find a book by title, author, or ISBN</label>
+      <input id="catalogue-search" type="search" placeholder="Search catalogue" autocomplete="off">
+      <p id="catalogue-message" class="muted" role="status" aria-live="polite"></p>
+      <div id="list" class="bookgrid"></div>
+    </section>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    roleGuard('LIBRARIAN', 'ADMIN');
+    const list = document.getElementById('list');
+    const formMessage = document.getElementById('form-message');
+    const catalogueMessage = document.getElementById('catalogue-message');
+    const catalogueSearch = document.getElementById('catalogue-search');
+    let searchTimeout;
+    let latestSearch = 0;
+
+    async function loadBooks() {
+      const searchId = ++latestSearch;
+      catalogueMessage.className = 'muted';
+      catalogueMessage.textContent = 'Searching catalogue...';
+      try {
+        const data = await api('/books?q=' + encodeURIComponent(catalogueSearch.value.trim()));
+        if (searchId !== latestSearch) return;
+        list.replaceChildren();
+        catalogueMessage.textContent = data.books.length
+          ? `${data.books.length} book${data.books.length === 1 ? '' : 's'} found.`
+          : 'No books found. Try a different title, author, or ISBN.';
+        for (const book of data.books) {
+          const card = document.createElement('article');
+          card.className = 'book';
+          const title = document.createElement('h3');
+          title.textContent = book.title;
+          const author = document.createElement('p');
+          author.textContent = book.author;
+          const inventory = document.createElement('p');
+          inventory.textContent = `${book.available_copies}/${book.total_copies} available`;
+          card.append(title, author, inventory);
+          if (book.status !== 'INACTIVE') {
+            const deactivate = document.createElement('button');
+            deactivate.className = 'btn danger';
+            deactivate.type = 'button';
+            deactivate.textContent = 'Deactivate';
+            deactivate.addEventListener('click', () => deactivateBook(book.id));
+            card.appendChild(deactivate);
+          }
+          list.appendChild(card);
+        }
+      } catch (error) {
+        if (searchId !== latestSearch) return;
+        list.replaceChildren();
+        catalogueMessage.className = 'alert';
+        catalogueMessage.textContent = error.message || 'Could not search the catalogue.';
+      }
+    }
+
+    async function addBook() {
+      formMessage.textContent = '';
+      try {
+        await api('/books', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: document.getElementById('book-title').value,
+            author: document.getElementById('book-author').value,
+            isbn: document.getElementById('book-isbn').value,
+            publisher: document.getElementById('book-publisher').value,
+            total_copies: Number(document.getElementById('book-total').value),
+            shelf_location: document.getElementById('book-shelf').value,
+          }),
+        });
+        formMessage.textContent = 'Book added.';
+        await loadBooks();
+      } catch (error) {
+        formMessage.textContent = error.message;
+      }
+    }
+
+    async function deactivateBook(id) {
+      try {
+        await api(`/books/${id}`, { method: 'DELETE' });
+        await loadBooks();
+      } catch (error) {
+        formMessage.textContent = error.message;
+      }
+    }
+
+    document.getElementById('add-book').addEventListener('click', addBook);
+    catalogueSearch.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadBooks, 250);
+    });
+    loadBooks();
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "name": "Library Due Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "days", "daysInterval": 1}]
+        }
+      },
+      "id": "1",
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-600, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT i.id,u.email,u.full_name,b.title,i.due_date FROM book_issues i JOIN users u ON u.id=i.student_id JOIN books b ON b.id=i.book_id WHERE i.status IN ('ISSUED','OVERDUE') AND u.active=true AND i.due_date=CURRENT_DATE+2;"
+      },
+      "id": "2",
+      "name": "Find Due Books",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [-350, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(({json})=>({json:{...json,subject:'Library book due reminder',message:`Hello ${json.full_name}, your book \"${json.title}\" is due on ${String(json.due_date).slice(0,10)}. Please return or renew it on time.`}}));"
+      },
+      "id": "3",
+      "name": "Format Reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-100, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-library-email@example.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Send Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [150, 0]
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [[{"node": "Find Due Books", "type": "main", "index": 0}]]
+    },
+    "Find Due Books": {
+      "main": [[{"node": "Format Reminder", "type": "main", "index": 0}]]
+    },
+    "Format Reminder": {
+      "main": [[{"node": "Send Reminder", "type": "main", "index": 0}]]
+    }
+  }
+}

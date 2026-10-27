@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">📚 Student</div>
+    <div class="nav-links">
+      <a href="books.html">Books</a>
+      <a href="my-books.html">My Books</a>
+      <a href="ai-assistant.html">AI</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Welcome, <span id="studentName"></span></h1>
+    <div id="dashboardMessage" role="status" aria-live="polite"></div>
+    <div class="grid">
+      <div class="card">Borrowed<div id="borrowed" class="stat">-</div></div>
+      <div class="card">Due Soon<div id="dueSoon" class="stat">-</div></div>
+      <div class="card">Overdue<div id="overdue" class="stat">-</div></div>
+      <div class="card">Fine<div id="fine" class="stat">₹-</div></div>
+      <div class="card">Available<div id="availableBooks" class="stat">-</div></div>
+    </div>
+    <br>
+    <div class="grid">
+      <a class="card" href="books.html"><h3>🔎 Search Books</h3></a>
+      <a class="card" href="my-books.html"><h3>📚 My Books</h3></a>
+      <a class="card" href="ai-assistant.html"><h3>🤖 AI Assistant</h3></a>
+      <a class="card" href="notifications.html"><h3>🔔 Notifications</h3></a>
+    </div>
+  </div>
+  <script src="/js/app.js"></script>
+  <script>
+    guard();
+    const user = currentUser();
+    if (user) {
+      document.getElementById('studentName').textContent = user.full_name || '';
+    }
+
+    (async () => {
+      const message = document.getElementById('dashboardMessage');
+      try {
+        const data = await api('/dashboard/student');
+        document.getElementById('borrowed').textContent = data.borrowed;
+        document.getElementById('dueSoon').textContent = data.dueSoon;
+        document.getElementById('overdue').textContent = data.overdue;
+        document.getElementById('fine').textContent = '₹' + data.fine;
+        document.getElementById('availableBooks').textContent = data.availableBooks;
+      } catch (error) {
+        message.className = 'alert';
+        message.textContent = error.message || 'Could not load the dashboard.';
+      }
+    })();
+  </script>
+</body>
+</html>

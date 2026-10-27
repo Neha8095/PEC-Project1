@@ -1,0 +1,64 @@
+{
+  "name": "Library Overdue Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "days", "daysInterval": 1}]
+        }
+      },
+      "id": "1",
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-600, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT i.id,i.student_id,u.email,u.full_name,b.title,i.due_date,GREATEST(0,CURRENT_DATE-i.due_date)::int late_days FROM book_issues i JOIN users u ON u.id=i.student_id JOIN books b ON b.id=i.book_id WHERE i.status IN ('ISSUED','OVERDUE') AND u.active=true AND i.due_date<CURRENT_DATE;"
+      },
+      "id": "2",
+      "name": "Find Overdue",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [-350, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(({json})=>{const fine=json.late_days*5;return {json:{...json,fine,subject:'Library book overdue reminder',message:`Hello ${json.full_name}, your book \"${json.title}\" was due on ${String(json.due_date).slice(0,10)} and is ${json.late_days} day(s) overdue. The current estimated fine is ₹${fine}. Please return it as soon as possible.`}};});"
+      },
+      "id": "3",
+      "name": "Calculate Fine and Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-100, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-library-email@example.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Send Overdue Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [150, 0]
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [[{"node": "Find Overdue", "type": "main", "index": 0}]]
+    },
+    "Find Overdue": {
+      "main": [[{"node": "Calculate Fine and Format", "type": "main", "index": 0}]]
+    },
+    "Calculate Fine and Format": {
+      "main": [[{"node": "Send Overdue Reminder", "type": "main", "index": 0}]]
+    }
+  }
+}

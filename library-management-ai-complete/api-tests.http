@@ -1,0 +1,9 @@
+### Health
+GET http://localhost:3000/api/health
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{"email":"student1@library.com","password":"Student@123"}
+### Books
+GET http://localhost:3000/api/books?q=Python

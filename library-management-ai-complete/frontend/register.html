@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="form">
+    <h2>🎓 Student Registration</h2>
+    <div id="msg"></div>
+
+    <form id="registerForm" novalidate>
+      <label for="full_name">Full Name</label>
+      <input id="full_name" required>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" required>
+
+      <label for="student_id">Student ID</label>
+      <input id="student_id" placeholder="STU006" required>
+
+      <label for="department">Department</label>
+      <input id="department" value="CSE">
+
+      <label for="year">Year</label>
+      <select id="year">
+        <option>2</option>
+        <option selected>3</option>
+        <option>4</option>
+      </select>
+
+      <label for="phone">Phone</label>
+      <input id="phone">
+
+      <button type="submit" class="btn primary" style="width:100%">Register</button>
+    </form>
+
+    <p><a href="/login.html">Back to login</a></p>
+  </div>
+
+  <script src="/js/app.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('registerForm');
+      const msg = document.getElementById('msg');
+      const fullName = document.getElementById('full_name');
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const studentId = document.getElementById('student_id');
+      const department = document.getElementById('department');
+      const year = document.getElementById('year');
+      const phone = document.getElementById('phone');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = {
+          full_name: fullName.value.trim(),
+          email: email.value.trim(),
+          password: password.value,
+          student_id: studentId.value.trim(),
+          department: department.value.trim(),
+          year: Number(year.value),
+          phone: phone.value.trim()
+        };
+
+        if (!payload.full_name || !payload.email || !payload.password || !payload.student_id) {
+          msg.innerHTML = '<div class="alert">Please fill in all required fields.</div>';
+          return;
+        }
+
+        try {
+          const d = await api('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+
+          msg.innerHTML = '<div class="success">' + (d.message || 'Registration successful.') + '</div>';
+          setTimeout(() => location.href = '/login.html', 900);
+        } catch (error) {
+          msg.innerHTML = '<div class="alert">' + (error.message || 'Registration failed.') + '</div>';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+

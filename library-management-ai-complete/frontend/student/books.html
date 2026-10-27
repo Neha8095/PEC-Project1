@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Books</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">📚 Books</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <main class="container">
+    <h1>Search Books</h1>
+    <form id="searchForm" role="search">
+      <label for="bookSearch">Find a book by title, author, or ISBN</label>
+      <input id="bookSearch" type="search" placeholder="For example, Python or an author's name" autocomplete="off">
+    </form>
+    <p id="searchMessage" class="muted" role="status" aria-live="polite"></p>
+    <div id="bookList" class="bookgrid"></div>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    guard();
+
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('bookSearch');
+    const searchMessage = document.getElementById('searchMessage');
+    const bookList = document.getElementById('bookList');
+    let searchTimeout;
+    let latestSearch = 0;
+
+    function addTextElement(parent, tag, text, className) {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      if (className) element.className = className;
+      parent.appendChild(element);
+      return element;
+    }
+
+    function renderBooks(books) {
+      bookList.replaceChildren();
+      for (const book of books) {
+        const card = document.createElement('article');
+        card.className = 'book';
+        addTextElement(card, 'span', book.category_name || 'General', 'badge');
+        addTextElement(card, 'h2', book.title);
+        addTextElement(card, 'p', `By ${book.author}`);
+        addTextElement(
+          card,
+          'p',
+          `ISBN: ${book.isbn || '-'} | Available: ${book.available_copies}/${book.total_copies} | Shelf: ${book.shelf_location || '-'}`,
+          'muted',
+        );
+
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.className = book.available_copies ? 'btn primary' : 'btn secondary';
+        action.textContent = book.available_copies ? 'Borrow' : 'Join Waitlist';
+        action.addEventListener('click', () => {
+          if (book.available_copies) {
+            borrowBook(book.id);
+          } else {
+            joinWaitlist(book.id);
+          }
+        });
+        card.appendChild(action);
+        bookList.appendChild(card);
+      }
+    }
+
+    async function loadBooks() {
+      const searchId = ++latestSearch;
+      const query = searchInput.value.trim();
+      searchMessage.className = 'muted';
+      searchMessage.textContent = 'Searching books...';
+
+      try {
+        const data = await api('/books?q=' + encodeURIComponent(query));
+        if (searchId !== latestSearch) return;
+
+        renderBooks(data.books);
+        searchMessage.textContent = data.books.length
+          ? `${data.books.length} book${data.books.length === 1 ? '' : 's'} found.`
+          : 'No books found. Try a different title, author, or ISBN.';
+      } catch (error) {
+        if (searchId !== latestSearch) return;
+        bookList.replaceChildren();
+        searchMessage.className = 'alert';
+        searchMessage.textContent = error.message || 'Could not search books.';
+      }
+    }
+
+    async function borrowBook(id) {
+      try {
+        const result = await api('/issues', {
+          method: 'POST',
+          body: JSON.stringify({ book_id: id }),
+        });
+        searchMessage.className = 'success';
+        searchMessage.textContent = result.message;
+        await loadBooks();
+      } catch (error) {
+        searchMessage.className = 'alert';
+        searchMessage.textContent = error.message || 'Could not borrow this book.';
+      }
+    }
+
+    async function joinWaitlist(id) {
+      try {
+        const result = await api('/waitlist', {
+          method: 'POST',
+          body: JSON.stringify({ book_id: id }),
+        });
+        searchMessage.className = 'success';
+        searchMessage.textContent = result.message;
+      } catch (error) {
+        searchMessage.className = 'alert';
+        searchMessage.textContent = error.message || 'Could not join the waitlist.';
+      }
+    }
+
+    searchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      clearTimeout(searchTimeout);
+      loadBooks();
+    });
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadBooks, 250);
+    });
+
+    loadBooks();
+  </script>
+</body>
+</html>

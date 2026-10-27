@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Users</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">👥 Users</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a class="btn primary" href="/register.html">Register Student</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Users</h1>
+    <div id="message" role="status" aria-live="polite"></div>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Student ID</th></tr>
+      </thead>
+      <tbody id="userRows"></tbody>
+    </table>
+  </div>
+  <script src="/js/app.js"></script>
+  <script>
+    roleGuard('ADMIN');
+
+    (async () => {
+      const rows = document.getElementById('userRows');
+      const message = document.getElementById('message');
+
+      try {
+        const data = await api('/users');
+        if (!data.users.length) {
+          message.textContent = 'No users have registered yet.';
+          return;
+        }
+
+        for (const user of data.users) {
+          const row = document.createElement('tr');
+          for (const value of [
+            user.full_name,
+            user.email,
+            user.role,
+            user.student_id || '-'
+          ]) {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.appendChild(cell);
+          }
+          rows.appendChild(row);
+        }
+      } catch (error) {
+        message.className = 'alert';
+        message.textContent = error.message || 'Could not load users.';
+      }
+    })();
+  </script>
+</body>
+</html>

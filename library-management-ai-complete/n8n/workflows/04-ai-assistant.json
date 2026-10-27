@@ -1,0 +1,48 @@
+{
+  "name": "Library AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "library/ai-assistant",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth"
+      },
+      "id": "1",
+      "name": "AI Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-600, 0],
+      "webhookId": "library-ai-assistant"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$json.body||{}; return [{json:{message:String(body.message||''),user_id:body.user_id,instruction:'Use database/tool results as the only source of truth. Never invent availability, fines, due dates or private data.'}}];"
+      },
+      "id": "2",
+      "name": "Trusted Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-350, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {success:true,ready:true,message:'Connect an AI Agent node here and attach PostgreSQL tools for production AI responses.',received:$json.message} }}"
+      },
+      "id": "3",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [0, 0]
+    }
+  ],
+  "connections": {
+    "AI Webhook": {
+      "main": [[{"node": "Trusted Context", "type": "main", "index": 0}]]
+    },
+    "Trusted Context": {
+      "main": [[{"node": "Response", "type": "main", "index": 0}]]
+    }
+  }
+}

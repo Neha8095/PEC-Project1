@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>n8n Workflows | LibraryAI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">⚙️ n8n Workflows</div>
+    <div class="nav-links">
+      <a href="/admin/dashboard.html">Dashboard</a>
+      <a href="/librarian/manage-books.html">Books</a>
+      <button class="btn danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <main class="container">
+    <h1>Library automation workflows</h1>
+    <p class="muted">A visual map of the workflows bundled with this project. Use the editor to inspect or configure workflow nodes.</p>
+    <div class="workflow-toolbar">
+      <p id="connectionMessage" class="muted" role="status" aria-live="polite">Connecting to n8n configuration…</p>
+      <a id="editorLink" class="btn primary" href="#" target="_blank" rel="noopener noreferrer" hidden>Open n8n Editor</a>
+    </div>
+    <div id="workflowList">
+      <section class="card workflow-card">
+        <h2 class="workflow-title">Search books</h2>
+        <p class="muted">Authenticated webhook searches the catalogue and returns matching books.</p>
+        <div class="workflow-flow" aria-label="Webhook to PostgreSQL search to JSON response">
+          <div class="workflow-node">Webhook<small>POST + header auth</small></div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">PostgreSQL<small>Bounded search</small></div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">JSON response</div>
+        </div>
+      </section>
+      <section class="card workflow-card">
+        <h2 class="workflow-title">Due reminders</h2>
+        <p class="muted">Daily check for books due in two days, followed by a formatted email reminder.</p>
+        <div class="workflow-flow" aria-label="Daily trigger to due-book query to format reminder to email">
+          <div class="workflow-node">Daily trigger</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Find due books</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Format reminder</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Send email</div>
+        </div>
+        <p class="muted workflow-note">Keep inactive until SMTP credentials and sender details are configured and tested.</p>
+      </section>
+      <section class="card workflow-card">
+        <h2 class="workflow-title">Overdue check</h2>
+        <p class="muted">Daily check for overdue books, calculates an estimated fine, and formats a notice.</p>
+        <div class="workflow-flow" aria-label="Daily trigger to overdue query to calculate fine and format message to email">
+          <div class="workflow-node">Daily trigger</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Find overdue books</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Calculate fine<small>Estimate only</small></div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Send email</div>
+        </div>
+        <p class="muted workflow-note">Keep inactive until SMTP credentials and sender details are configured and tested.</p>
+      </section>
+      <section class="card workflow-card">
+        <h2 class="workflow-title">AI assistant placeholder</h2>
+        <p class="muted">Authenticated webhook passes trusted context and returns a placeholder response.</p>
+        <div class="workflow-flow" aria-label="Authenticated AI webhook to trusted context to placeholder response">
+          <div class="workflow-node">AI webhook<small>Header auth</small></div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Trusted context</div><span class="workflow-arrow" aria-hidden="true">→</span>
+          <div class="workflow-node">Placeholder response</div>
+        </div>
+      </section>
+    </div>
+    <p class="muted">The n8n editor is separate from the library app and requires its own n8n sign-in. Start the local services with <code>docker compose up -d --wait</code> if the editor is not available.</p>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    roleGuard('ADMIN');
+    (async () => {
+      const message = document.getElementById('connectionMessage');
+      const editorLink = document.getElementById('editorLink');
+      try {
+        const config = await api('/integrations/n8n');
+        editorLink.href = config.editor_url;
+        editorLink.hidden = false;
+        message.textContent = `Configured n8n editor: ${config.editor_url}`;
+      } catch (error) {
+        message.className = 'alert';
+        message.textContent = error.message || 'Could not load the n8n editor address.';
+      }
+    })();
+  </script>
+</body>
+</html>
