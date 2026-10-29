@@ -1,16 +1,16 @@
-# 📚 AI-Powered Library Management and Automation System
+#  AI-Powered Library Management and Automation System
 
 An intelligent library management web application that combines **Artificial Intelligence (AI), Large Language Models (LLMs), PostgreSQL, and n8n workflow automation** to simplify library operations, improve book discovery, and automate routine tasks.
 
-## 🚀 Project Overview
+## Project Overview
 
 Traditional library systems often require manual catalogue management, book availability checks, and due-date tracking. This project aims to make these activities easier through a centralized web application with an AI-powered library assistant.
 
 Students can search for books, check availability, explore recommendations, and ask questions through a conversational interface. Librarians can manage the catalogue, monitor inventory, and view library analytics. n8n workflows support automated reminders and alerts.
 
-## ✨ Key Features
+##  Key Features
 
-### 🤖 AI-Powered Library Assistant
+### AI-Powered Library Assistant
 - Natural-language question answering using an LLM provider.
 - Book search and availability queries.
 - Book recommendations based on learning interests.
@@ -19,7 +19,7 @@ Students can search for books, check availability, explore recommendations, and 
 - Context-aware follow-up questions when supported by the configured provider.
 - Database-grounded answers using approved backend tools.
 
-### 📖 Library Management
+###  Library Management
 - Student and librarian/admin authentication.
 - Book catalogue and inventory management.
 - Search and browse books.
@@ -28,20 +28,20 @@ Students can search for books, check availability, explore recommendations, and 
 - CSV and Excel (`.xlsx`) bulk book import.
 - Import validation and inventory summaries.
 
-### 📊 Librarian Dashboard
+###  Librarian Dashboard
 - Library inventory and availability information.
 - Borrowing statistics and popular-book reports.
 - Low-stock monitoring.
 - Overdue-loan reports.
 
-### ⚙️ Workflow Automation with n8n
+###  Workflow Automation with n8n
 - Scheduled due-date reminders.
 - Overdue notifications.
 - Low-stock alerts.
 - Authenticated AI assistant integration.
 - Automation logs to help prevent duplicate notifications.
 
-### 🔐 Security
+### Security
 - JWT-based authentication.
 - Password hashing with bcryptjs.
 - Role-based access control.
@@ -49,7 +49,7 @@ Students can search for books, check availability, explore recommendations, and 
 - Server-side environment variables for credentials.
 - Controlled access to student-specific library information.
 
-## 🧠 AI and LLM Integration
+##  AI and LLM Integration
 
 The project supports configurable AI providers:
 
@@ -64,9 +64,8 @@ The project supports configurable AI providers:
 
 The LLM interprets questions and generates responses, while approved backend tools retrieve relevant library records. The database remains the source of truth for book availability, loans, and inventory.
 
-**Note:** Generative AI requires the appropriate provider configuration. API quotas and usage limits depend on the selected provider. Local catalogue mode does not provide the same open-ended generative conversation as an LLM.
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 **Frontend**
 - HTML5
@@ -94,7 +93,7 @@ The LLM interprets questions and generates responses, while approved backend too
 - Git and GitHub
 - Visual Studio Code
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```text
 Student / Librarian
@@ -127,7 +126,7 @@ Node.js + Express API
        Email
 ```
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 library-management-ai-complete/
@@ -171,7 +170,7 @@ library-management-ai-complete/
 
 *This is a representative structure; optional files and directories may vary with your local project version.*
 
-## 💻 Requirements
+##  Requirements
 
 Install the following before running the project:
 
@@ -181,7 +180,7 @@ Install the following before running the project:
 - A Google Gemini or OpenAI API key for the selected cloud LLM provider, or Ollama for a local LLM
 - An SMTP account if you want to send automated email notifications
 
-## ⚡ Installation and Setup
+##  Installation and Setup
 
 ### 1. Clone the Repository
 
@@ -275,7 +274,7 @@ Check the application manually by testing login, catalogue search, CSV/XLSX impo
 
 Actual results depend on your configuration. API connectivity, provider credentials, database setup, and SMTP delivery should be verified in your own environment.
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
 - Retrieval-Augmented Generation (RAG) for answering questions from approved library documents.
 - Semantic book search using embeddings.
@@ -285,14 +284,7 @@ Actual results depend on your configuration. API connectivity, provider credenti
 - Advanced library usage analytics.
 - Fine-grained librarian permissions and audit reporting.
 
-## 🎯 Project Objective
+##  Project Objective
 
 The objective is to develop a practical, AI-assisted library management platform that reduces repetitive manual work, improves access to library resources, and demonstrates the integration of LLMs, backend development, relational databases, and workflow automation.
 
-## 👩‍💻 Developed As
-
-An academic computer science engineering project focused on AI integration, database management, web development, and process automation.
-
-## 📄 License
-
-A license has not been specified. Add an appropriate open-source license if you intend to permit others to reuse or modify this project.
